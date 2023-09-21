@@ -7,6 +7,7 @@ use Alura\Pdo\Domain\Repository\StudentsRepository;
 use Alura\Pdo\Infrastructure\Persistence\ConnectionCreator;
 use DateTimeImmutable;
 use PDO;
+use PDOStatement;
 
 class PdoStudentsRepository implements StudentsRepository 
 {
@@ -19,14 +20,19 @@ class PdoStudentsRepository implements StudentsRepository
 
     public function allStudents(): array 
     {
-        $statement = $this->connection->query("SELECT * FROM students");
+        $studentDataList = $this->connection->query("SELECT * FROM students");
 
-        $studentsDataList = $statement->fetchAll(PDO::FETCH_ASSOC);
+        return $this->hydrateStudentsList($studentDataList);
+    }
+
+    public function hydrateStudentsList(PDOStatement $statement): array 
+    {
+        $studentDataList = $statement->fetchAll(PDO::FETCH_ASSOC);
 
         $studentList = [];
 
-        if(count($studentsDataList) >= 1) {
-            foreach($studentsDataList as $studentDatas) {
+        if(count($studentDataList) >= 1) {
+            foreach($studentDataList as $studentDatas) {
                 $studentList[] = new Student(
                 $studentDatas['id'],
                 $studentDatas['name'],
@@ -36,7 +42,6 @@ class PdoStudentsRepository implements StudentsRepository
 
         return $studentList;
     }
-
     public function studentsBirthAt(DateTimeImmutable $birthDate): array
     {
         return [];
@@ -50,20 +55,6 @@ class PdoStudentsRepository implements StudentsRepository
         }
 
         return $this->update($student);  
-    }
-
-    private function update(Student $student): bool 
-    {
-        $sqlInsert = "UPDATE students SET name = :name,  birth_date = :birth_date)
-        VALUES  (:name, :birthDate);";
-
-        $statement = $this->connection->prepare($sqlInsert);
-        $status = $statement->execute([
-            ":name" =>  $student->name(), 
-            ":birthDate" => $student->birthDate()->format("Y-m-d")
-        ]);
-
-        return $status;
     }
 
     private function insert(Student $student): bool 
@@ -80,6 +71,20 @@ class PdoStudentsRepository implements StudentsRepository
         if ($status) {
             $student->defineId($this->connection->lastInsertId());
         }
+
+        return $status;
+    }
+
+    private function update(Student $student): bool 
+    {
+        $sqlInsert = "UPDATE students SET name = :name,  birth_date = :birth_date)
+        VALUES  (:name, :birthDate);";
+
+        $statement = $this->connection->prepare($sqlInsert);
+        $status = $statement->execute([
+            ":name" =>  $student->name(), 
+            ":birthDate" => $student->birthDate()->format("Y-m-d")
+        ]);
 
         return $status;
     }
