@@ -13,5 +13,5 @@ interface StudentsRepository
 
     public function save(Student $student): bool;
 
-    public function delete(Student $student): bool;  
+    public function remove(Student $student): bool;  
 }

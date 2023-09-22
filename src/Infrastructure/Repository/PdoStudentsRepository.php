@@ -4,18 +4,18 @@ namespace Alura\Pdo\Infrastructure\Repository;
 
 use Alura\Pdo\Domain\Model\Student;
 use Alura\Pdo\Domain\Repository\StudentsRepository;
-use Alura\Pdo\Infrastructure\Persistence\ConnectionCreator;
 use DateTimeImmutable;
 use PDO;
 use PDOStatement;
+use RuntimeException;
 
 class PdoStudentsRepository implements StudentsRepository 
 {
     private PDO $connection;
     
-    public function __construct() 
+    public function __construct(PDO $connection) 
     {
-        $this->connection = ConnectionCreator::createConnection();
+        $this->connection = $connection;
     }
 
     public function allStudents(): array 
@@ -63,6 +63,7 @@ class PdoStudentsRepository implements StudentsRepository
         VALUES  (:name, :birthDate);";
 
         $statement = $this->connection->prepare($sqlInsert);
+       
         $status = $statement->execute([
             ":name" =>  $student->name(), 
             ":birthDate" => $student->birthDate()->format("Y-m-d")
@@ -89,7 +90,7 @@ class PdoStudentsRepository implements StudentsRepository
         return $status;
     }
 
-    public function delete(Student $student): bool
+    public function remove(Student $student): bool
     {
         $prepareStatement = $this->connection->prepare("DELETE FROM students WHERE id = :id;");
         $prepareStatement->bindValue(":id", $student->id(), PDO::PARAM_INT);
